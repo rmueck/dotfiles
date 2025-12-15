@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -e
+
+MASTER_REPO="/etc/dotfiles"
+DEFAULT_PACKAGES=("bash" "vim" "git" "fzf" "tmux")
+PACKAGES=("$@")
+
+if [ ${#PACKAGES[@]} -eq 0 ]; then
+    PACKAGES=("${DEFAULT_PACKAGES[@]}")
+fi
+
+USER_DOTFILES="$HOME/.dotfiles"
+
+echo "Setting up dotfiles for $USER..."
+echo "Packages: ${PACKAGES[*]}"
+
+# Check if master repo exists and is readable
+if [ ! -r "$MASTER_REPO" ]; then
+    echo "Error: Cannot read $MASTER_REPO"
+    echo "Please ensure /etc/dotfiles exists and is readable."
+    exit 1
+fi
+
+# Remove existing if present
+if [ -d "$USER_DOTFILES" ]; then
+    echo "Warning: $USER_DOTFILES already exists"
+    read -p "Remove and recreate? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$USER_DOTFILES"
+    else
+        echo "Aborting."
+        exit 1
+    fi
+fi
+
+# Copy dotfiles
+echo "Copying dotfiles..."
+mkdir -p "$USER_DOTFILES"
+cp -r "$MASTER_REPO"/* "$USER_DOTFILES/" 2>/dev/null || true
+cp -r "$MASTER_REPO"/.??* "$USER_DOTFILES/" 2>/dev/null || true
+
+# Remove master's .git if it was copied
+rm -rf "$USER_DOTFILES/.git"
+
+# Remove nested git repos
+find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Initialize git
+cd "$USER_DOTFILES"
+git config --global init.defaultBranch main 2>/dev/null || true
+git init
+git add .
+git commit -m "Initial dotfiles setup"
+
+echo "✓ Repository initialized"
+
+# Deploy packages
+echo "Deploying packages..."
+for package in "${PACKAGES[@]}"; do
+    if [ ! -d "$package" ]; then
+        echo "Warning: Package '$package' not found, skipping..."
+        continue
+    fi
+
+    echo "  - Deploying $package"
+    stow -t "$HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
+done
+
+echo ""
+echo "✓ Dotfiles setup complete!"
+echo ""
+echo "You can now:"
+echo "  • Edit configs in ~/.dotfiles/"
+echo "  • Commit: cd ~/.dotfiles && git add . && git commit -m 'Updated config'"
+echo "  • Restow: cd ~/.dotfiles && stow -R <package>"
+echo ""
