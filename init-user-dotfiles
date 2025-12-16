@@ -3,7 +3,7 @@
 set -e
 
 MASTER_REPO="/etc/dotfiles"
-DEFAULT_PACKAGES=("bash" "vim")
+DEFAULT_PACKAGES=("bash" "vim" "tmux" "fzf")
 
 if [ "$EUID" -ne 0 ]; then
     echo "Error: This script must be run with sudo"
@@ -67,8 +67,8 @@ done
 # Backup existing config files that will conflict with stow
 echo "Checking for existing config files..."
 BACKUP_DIR="$USER_HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
-CONFLICT_FILES=(".bashrc" ".bash_profile" ".bash_logout" ".bash_aliases" 
-                ".vimrc" ".vim" 
+CONFLICT_FILES=(".bashrc" ".bash_profile" ".bash_logout" ".bash_aliases"
+                ".vimrc" ".vim"
                 ".tmux.conf")
 
 BACKED_UP=0
@@ -131,14 +131,14 @@ for package in "${PACKAGES[@]}"; do
         echo "Warning: Package '$package' not found, skipping..."
         continue
     fi
-    
+
     echo "  - Deploying $package"
     cd "$USER_DOTFILES"
-    
+
     # Capture full stow output for debugging
     STOW_OUTPUT=$(sudo -u "$USERNAME" stow -v -t "$USER_HOME" "$package" 2>&1)
     STOW_EXIT=$?
-    
+
     if [ $STOW_EXIT -eq 0 ]; then
         echo "    ✓ $package deployed"
     else
