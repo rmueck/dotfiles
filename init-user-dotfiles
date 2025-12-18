@@ -3,7 +3,7 @@
 set -e
 
 MASTER_REPO="/etc/dotfiles"
-DEFAULT_PACKAGES=("bash" "vim" "tmux" "fzf")
+DEFAULT_PACKAGES=("bash" "vim" "tmux" "fzf" "rclone")
 
 if [ "$EUID" -ne 0 ]; then
     echo "Error: This script must be run with sudo"
@@ -213,3 +213,4 @@ echo "  • Commit changes: cd ~/.dotfiles && git add . && git commit -m 'messag
 echo "  • Customize locally: ~/.bashrc.local, ~/.vimrc.local"
 echo "  • Restow after changes: cd ~/.dotfiles && stow -R <package>"
 echo "  • Configure git: git config --global user.name 'Your Name'"
+echo "  • Decrypt rclone config in ~/.config/rclone with ccdecrypt"
