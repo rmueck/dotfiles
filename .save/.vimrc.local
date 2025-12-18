@@ -1,0 +1,6 @@
+" Local vim customizations for this user
+" This file is not managed by dotfiles and won't be overwritten
+
+" Add your personal aliases, functions, and settings here
+"
+colorscheme PaperColor
