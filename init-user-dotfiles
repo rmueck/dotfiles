@@ -2,40 +2,47 @@
 
 set -e
 
+# Configuration
 MASTER_REPO="/etc/dotfiles"
-DEFAULT_PACKAGES=("bash" "vim" "tmux" "fzf" "rclone")
+DEFAULT_PACKAGES=("bash" "vim" "fzf" "tmux" "rclone")
 
+# Check if running with sudo
 if [ "$EUID" -ne 0 ]; then
     echo "Error: This script must be run with sudo"
+    echo "Usage: sudo $0 <username> [package1 package2 ...]"
     exit 1
 fi
 
+# Parse arguments
 USERNAME=$1
 shift
 PACKAGES=("$@")
 
+# Use default packages if none specified
 if [ ${#PACKAGES[@]} -eq 0 ]; then
     PACKAGES=("${DEFAULT_PACKAGES[@]}")
 fi
 
+# Validate user
 if [ -z "$USERNAME" ]; then
     echo "Usage: sudo $0 <username> [package1 package2 ...]"
-    echo "Example: sudo $0 stowtest bash vim tmux"
+    echo "Example: sudo $0 stowtest bash vim git"
     exit 1
 fi
 
 USER_HOME=$(getent passwd "$USERNAME" | cut -d: -f6)
 USER_GROUP=$(id -gn "$USERNAME")
-USER_DOTFILES="$USER_HOME/.dotfiles"
-
-echo "Initializing dotfiles for $USERNAME..."
-echo "Home directory: $USER_HOME"
-echo "Packages: ${PACKAGES[*]}"
 
 if [ -z "$USER_HOME" ]; then
     echo "Error: User $USERNAME not found"
     exit 1
 fi
+
+USER_DOTFILES="$USER_HOME/.dotfiles"
+
+echo "Initializing dotfiles for $USERNAME..."
+echo "Home directory: $USER_HOME"
+echo "Packages to deploy: ${PACKAGES[*]}"
 
 # Remove existing dotfiles directory if present
 if [ -d "$USER_DOTFILES" ]; then
@@ -50,81 +57,34 @@ if [ -d "$USER_DOTFILES" ]; then
     fi
 fi
 
-# Backup .local files (create temp dir as root, fix permissions)
-echo "Checking for existing local customizations..."
-LOCAL_BACKUP=$(mktemp -d)
-chmod 755 "$LOCAL_BACKUP"
-LOCAL_FILES=(".bashrc.local" ".vimrc.local")
-
-for file in "${LOCAL_FILES[@]}"; do
-    if [ -f "$USER_HOME/$file" ] && [ ! -L "$USER_HOME/$file" ]; then
-        echo "  - Backing up $file"
-        cp "$USER_HOME/$file" "$LOCAL_BACKUP/$file"
-        chmod 644 "$LOCAL_BACKUP/$file"
-    fi
-done
-
-# Backup existing config files that will conflict with stow
-echo "Checking for existing config files..."
-BACKUP_DIR="$USER_HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
-CONFLICT_FILES=(".bashrc" ".bash_profile" ".bash_logout" ".bash_aliases"
-                ".vimrc" ".vim"
-                ".tmux.conf")
-
-BACKED_UP=0
-for file in "${CONFLICT_FILES[@]}"; do
-    if [ -e "$USER_HOME/$file" ] && [ ! -L "$USER_HOME/$file" ]; then
-        if [ $BACKED_UP -eq 0 ]; then
-            mkdir -p "$BACKUP_DIR"
-            BACKED_UP=1
-            echo "  Backing up existing files to: $BACKUP_DIR"
-        fi
-        echo "    - Backing up $file"
-        mv "$USER_HOME/$file" "$BACKUP_DIR/"
-    fi
-done
-
-if [ $BACKED_UP -eq 1 ]; then
-    chown -R "$USERNAME:$USER_GROUP" "$BACKUP_DIR"
-    echo "  ✓ Backup complete"
-fi
-
+# Simple copy of the entire structure (excluding .git)
 echo "Copying dotfiles from $MASTER_REPO..."
 mkdir -p "$USER_DOTFILES"
 rsync -a --exclude='.git' "$MASTER_REPO/" "$USER_DOTFILES/"
 
+# Remove any nested git repositories to avoid issues
+find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Change ownership
 chown -R "$USERNAME:$USER_GROUP" "$USER_DOTFILES"
 
+# Initialize git repository as the user
 echo "Initializing git repository..."
 cd "$USER_DOTFILES"
 
-# Configure git for this user
+# Configure git for this user (in case not configured)
 sudo -u "$USERNAME" git config --global init.defaultBranch main 2>/dev/null || true
 sudo -u "$USERNAME" git config --global user.name "${USERNAME^}" 2>/dev/null || true
 sudo -u "$USERNAME" git config --global user.email "$USERNAME@$(hostname -f 2>/dev/null || hostname)" 2>/dev/null || true
-sudo -u "$USERNAME" git config --global diff.ignoreSubmodules dirty 2>/dev/null || true
-sudo -u "$USERNAME" git config --global status.ignoreSubmodules dirty 2>/dev/null || true
 
-# Initialize git repo
+# Initialize and commit
 sudo -u "$USERNAME" git init
-
-# Handle nested git repositories
-if find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d 2>/dev/null | grep -q .; then
-    echo "Found nested git repositories. Adding to .gitignore..."
-    find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d | while read gitdir; do
-        rel_path=$(realpath --relative-to="$USER_DOTFILES" "$gitdir")
-        echo "$rel_path" >> "$USER_DOTFILES/.gitignore"
-    done
-    sudo chown "$USERNAME:$USER_GROUP" "$USER_DOTFILES/.gitignore" 2>/dev/null || true
-fi
-
-# Initial commit
 sudo -u "$USERNAME" git add .
-sudo -u "$USERNAME" git commit -m "Initial dotfiles setup" 2>&1 | grep -v "warning: adding embedded git repository" || true
+sudo -u "$USERNAME" git commit -m "Initial dotfiles setup"
 
 echo "✓ Git repository initialized"
 
-# Deploy packages with better error reporting
+# Deploy packages with stow
 echo "Deploying packages..."
 for package in "${PACKAGES[@]}"; do
     if [ ! -d "$USER_DOTFILES/$package" ]; then
@@ -134,83 +94,17 @@ for package in "${PACKAGES[@]}"; do
 
     echo "  - Deploying $package"
     cd "$USER_DOTFILES"
-
-    # Capture full stow output for debugging
-    STOW_OUTPUT=$(sudo -u "$USERNAME" stow -v -t "$USER_HOME" "$package" 2>&1)
-    STOW_EXIT=$?
-
-    if [ $STOW_EXIT -eq 0 ]; then
-        echo "    ✓ $package deployed"
-    else
-        echo "    ✗ Failed to deploy $package"
-        echo "    Error output:"
-        echo "$STOW_OUTPUT" | grep -v "BUG in find_stowed_path" | sed 's/^/      /'
-    fi
+    sudo -u "$USERNAME" stow -t "$USER_HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
 done
-
-echo "✓ Package deployment complete"
-
-# Restore .local customization files
-if [ -d "$LOCAL_BACKUP" ] && [ "$(ls -A $LOCAL_BACKUP 2>/dev/null)" ]; then
-    echo "Restoring local customizations..."
-    for file in "${LOCAL_FILES[@]}"; do
-        if [ -f "$LOCAL_BACKUP/$file" ]; then
-            echo "  - Restoring $file"
-            cp "$LOCAL_BACKUP/$file" "$USER_HOME/$file"
-            chown "$USERNAME:$USER_GROUP" "$USER_HOME/$file"
-        fi
-    done
-fi
-
-# Create local customization files if they don't exist
-echo "Creating local customization files (if needed)..."
-
-if [ ! -f "$USER_HOME/.bashrc.local" ]; then
-    sudo -u "$USERNAME" tee "$USER_HOME/.bashrc.local" > /dev/null << 'BASHEOF'
-# Local bash customizations for this user
-# This file is not managed by dotfiles and won't be overwritten
-
-# Add your personal aliases, functions, and settings here
-BASHEOF
-    echo "  - Created .bashrc.local"
-else
-    echo "  - .bashrc.local already exists"
-fi
-
-if [ ! -f "$USER_HOME/.vimrc.local" ]; then
-    sudo -u "$USERNAME" touch "$USER_HOME/.vimrc.local"
-    echo "  - Created .vimrc.local"
-else
-    echo "  - .vimrc.local already exists"
-fi
-
-# Cleanup
-rm -rf "$LOCAL_BACKUP"
 
 echo ""
 echo "✓ Dotfiles initialized successfully for $USERNAME!"
 echo ""
-if [ -d "$BACKUP_DIR" ]; then
-    echo "Your original config files were backed up to:"
-    echo "  $BACKUP_DIR"
-    echo ""
-fi
-echo "What was set up:"
-echo "  • Dotfiles repository created at ~/.dotfiles"
-echo "  • Configuration files symlinked to home directory"
-echo "  • Local customization files (.local) preserved/created"
-echo ""
-echo "Verify installation:"
-echo "  ls -la ~/ | grep -E '\.(bashrc|vimrc|tmux)'"
-echo ""
-echo "Git configuration:"
-echo "  Current git user: $(sudo -u "$USERNAME" git config --global user.name 2>/dev/null || echo 'not set')"
-echo "  Current git email: $(sudo -u "$USERNAME" git config --global user.email 2>/dev/null || echo 'not set')"
-echo ""
-echo "Next steps:"
-echo "  • Edit configs: cd ~/.dotfiles && vim <package>/.<config>"
+echo "User $USERNAME can now:"
+echo "  • Make changes in ~/.dotfiles/"
 echo "  • Commit changes: cd ~/.dotfiles && git add . && git commit -m 'message'"
-echo "  • Customize locally: ~/.bashrc.local, ~/.vimrc.local"
-echo "  • Restow after changes: cd ~/.dotfiles && stow -R <package>"
-echo "  • Configure git: git config --global user.name 'Your Name'"
-echo "  • Decrypt rclone config in ~/.config/rclone with ccdecrypt"
+echo "  • View history: cd ~/.dotfiles && git log"
+echo "  • Restow after changes: cd ~/.dotfiles && stow -R bash"
+echo "  • Do not forget to decrypt the rclone config in ~./config/rclone!"
+echo ""
+echo "This is now $USERNAME's independent dotfiles repository."

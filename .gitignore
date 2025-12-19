@@ -1,0 +1,10 @@
+# Vim runtime files
+*.swp
+*.swo
+*.swn
+*~
+.netrwhist
+
+# OS files
+.DS_Store
+Thumbs.db

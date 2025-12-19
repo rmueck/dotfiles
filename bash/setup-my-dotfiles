@@ -35,42 +35,6 @@ if [ -d "$USER_DOTFILES" ]; then
     fi
 fi
 
-# Backup .local files
-echo "Checking for existing local customizations..."
-LOCAL_BACKUP=$(mktemp -d)
-LOCAL_FILES=(".bashrc.local" ".vimrc.local")
-
-for file in "${LOCAL_FILES[@]}"; do
-    if [ -f "$HOME/$file" ] && [ ! -L "$HOME/$file" ]; then
-        echo "  - Backing up $file"
-        cp "$HOME/$file" "$LOCAL_BACKUP/$file"
-    fi
-done
-
-# Backup existing config files that will conflict with stow
-echo "Checking for existing config files..."
-BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
-CONFLICT_FILES=(".bashrc" ".bash_profile" ".bash_logout" ".bash_aliases"
-                ".vimrc" ".vim"
-                ".tmux.conf")
-
-BACKED_UP=0
-for file in "${CONFLICT_FILES[@]}"; do
-    if [ -e "$HOME/$file" ] && [ ! -L "$HOME/$file" ]; then
-        if [ $BACKED_UP -eq 0 ]; then
-            mkdir -p "$BACKUP_DIR"
-            BACKED_UP=1
-            echo "  Backing up existing files to: $BACKUP_DIR"
-        fi
-        echo "    - Backing up $file"
-        mv "$HOME/$file" "$BACKUP_DIR/"
-    fi
-done
-
-if [ $BACKED_UP -eq 1 ]; then
-    echo "  ✓ Backup complete"
-fi
-
 # Copy dotfiles
 echo "Copying dotfiles..."
 mkdir -p "$USER_DOTFILES"
@@ -86,99 +50,29 @@ find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/
 # Initialize git
 cd "$USER_DOTFILES"
 git config --global init.defaultBranch main 2>/dev/null || true
-git config --global diff.ignoreSubmodules dirty 2>/dev/null || true
-git config --global status.ignoreSubmodules dirty 2>/dev/null || true
-
 git init
-
-# Handle nested repositories by adding to .gitignore
-if find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d 2>/dev/null | grep -q .; then
-    echo "Found nested git repositories. Adding to .gitignore..."
-    find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d | while read gitdir; do
-        rel_path=$(realpath --relative-to="$USER_DOTFILES" "$gitdir")
-        echo "$rel_path" >> "$USER_DOTFILES/.gitignore"
-    done
-fi
-
 git add .
-git commit -m "Initial dotfiles setup" 2>&1 | grep -v "warning: adding embedded git repository" || true
+git commit -m "Initial dotfiles setup"
 
 echo "✓ Repository initialized"
 
-# Deploy packages with better error reporting
+# Deploy packages
 echo "Deploying packages..."
 for package in "${PACKAGES[@]}"; do
     if [ ! -d "$package" ]; then
         echo "Warning: Package '$package' not found, skipping..."
         continue
     fi
-
+    
     echo "  - Deploying $package"
-
-    # Capture stow output for debugging
-    STOW_OUTPUT=$(stow -v -t "$HOME" "$package" 2>&1)
-    STOW_EXIT=$?
-
-    if [ $STOW_EXIT -eq 0 ]; then
-        echo "    ✓ $package deployed"
-    else
-        echo "    ✗ Failed to deploy $package"
-        echo "    Error output:"
-        echo "$STOW_OUTPUT" | grep -v "BUG in find_stowed_path" | sed 's/^/      /'
-    fi
+    stow -t "$HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
 done
-
-echo "✓ Package deployment complete"
-
-# Restore .local customization files
-if [ -d "$LOCAL_BACKUP" ] && [ "$(ls -A $LOCAL_BACKUP 2>/dev/null)" ]; then
-    echo "Restoring local customizations..."
-    for file in "${LOCAL_FILES[@]}"; do
-        if [ -f "$LOCAL_BACKUP/$file" ]; then
-            echo "  - Restoring $file"
-            cp "$LOCAL_BACKUP/$file" "$HOME/$file"
-        fi
-    done
-fi
-
-# Create local customization files if they don't exist
-if [ ! -f "$HOME/.bashrc.local" ]; then
-    cat > "$HOME/.bashrc.local" << 'BASHEOF'
-# Local bash customizations for this user
-# This file is not managed by dotfiles and won't be overwritten
-
-# Add your personal aliases, functions, and settings here
-BASHEOF
-    echo "  - Created .bashrc.local"
-fi
-
-if [ ! -f "$HOME/.vimrc.local" ]; then
-    touch "$HOME/.vimrc.local"
-    echo "  - Created .vimrc.local"
-fi
-
-# Cleanup
-rm -rf "$LOCAL_BACKUP"
 
 echo ""
 echo "✓ Dotfiles setup complete!"
 echo ""
-if [ -d "$BACKUP_DIR" ]; then
-    echo "Your original config files were backed up to:"
-    echo "  $BACKUP_DIR"
-    echo ""
-fi
-echo "What was set up:"
-echo "  • Dotfiles repository: ~/.dotfiles"
-echo "  • Configuration files symlinked to home directory"
-echo "  • Local customization files (.local) preserved/created"
-echo ""
-echo "Verify installation:"
-echo "  ls -la ~/ | grep -E '\.(bashrc|vimrc|tmux)'"
-echo ""
 echo "You can now:"
-echo "  • Edit configs: cd ~/.dotfiles && vim <package>/.<config>"
+echo "  • Edit configs in ~/.dotfiles/"
 echo "  • Commit: cd ~/.dotfiles && git add . && git commit -m 'Updated config'"
 echo "  • Restow: cd ~/.dotfiles && stow -R <package>"
-echo "  • Customize locally: ~/.bashrc.local, ~/.vimrc.local"
-echo "  • Decrypt rclone config in ~/.config/rclone with ccdecrypt"
+echo ""

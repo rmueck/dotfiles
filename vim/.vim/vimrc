@@ -11,7 +11,8 @@ call plug#begin('~/.vim/plugged')
   Plug 'https://github.com/jonathanfilip/vim-lucius',
   " ------------------------------------------------------------
   Plug 'https://github.com/scrooloose/nerdtree',
-  Plug 'https://github.com/vim-syntastic/syntastic',
+  " Trying ALE
+  "Plug 'https://github.com/vim-syntastic/syntastic',
   Plug 'https://github.com/vim-airline/vim-airline',
   Plug 'https://github.com/vim-airline/vim-airline-themes',
   Plug 'https://github.com/tomtom/tcomment_vim',
@@ -19,12 +20,12 @@ call plug#begin('~/.vim/plugged')
   Plug 'https://github.com/tpope/vim-fugitive',
   Plug 'https://github.com/airblade/vim-gitgutter',
   Plug 'https://github.com/mbbill/undotree',
-  " We do not use puppet anymore.
-  " Plug 'https://github.com/rodjek/vim-puppet', { 'for': 'puppet' }
   Plug 'https://github.com/plasticboy/vim-markdown', { 'for': 'markdown' }
   Plug 'https://github.com/junegunn/fzf', { 'do': { -> fzf#install() } }
   Plug 'https://github.com/junegunn/fzf.vim',
-  "Plug 'https://github.com/tpope/vim-jdaddy.git',
+  " NEW STUFF
+  Plug 'sheerun/vim-polyglot',
+  Plug 'dense-analysis/ale',
 '
 call plug#end()
 " }}}
@@ -111,6 +112,13 @@ let g:syntastic_json_checkers = ['jsonlint']
 let g:syntastic_python_checkers=['flake8']
 " }}}
 
+" ALE {{{ replace Syntastic
+" let g:ale_warn_about_trailing_whitespace = v:true
+let g:ale_open_list = 1
+let g:ale_keep_list_window_open = 0
+let g:ale_lint_on_enter = 1
+" }}}
+
 " NERDTree settings {{{
 " Quit on opening files from the tree
 let NERDTreeQuitOnOpen=1
@@ -124,6 +132,10 @@ nnoremap <C-n> :NERDTreeToggle<CR>
 set pastetoggle=<F2>
 nnoremap <F5> :UndotreeToggle<CR>
 nnoremap <F6> :GitGutterBufferToggle<CR>
+nnoremap <F7> :lopen<CR>
+nnoremap <F8> :lclose<CR>
+nnoremap <S-F7> :lnext<CR>
+nnoremap <S-F8> :lprev<CR>
 nmap <leader>w :w!<cr>
 command! W w !sudo tee % > /dev/null
 "noremap <Up> <NOP>

@@ -1,1 +1,8 @@
-undodir/**
+# Vim runtime files - don't track these
+undodir/
+backup/
+swap/
+.netrwhist
+*.swp
+*.swo
+*.swn
