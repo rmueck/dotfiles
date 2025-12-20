@@ -1,0 +1,6 @@
+# Common Python packages
+requests
+pytest
+black
+flake8
+pylint
