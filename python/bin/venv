@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Find and activate nearest venv
+find_venv() {
+    local dir="$PWD"
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/.venv/bin/activate" ]; then
+            echo "$dir/.venv"
+            return 0
+        elif [ -f "$dir/venv/bin/activate" ]; then
+            echo "$dir/venv"
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    return 1
+}
+
+VENV_PATH=$(find_venv)
+if [ -n "$VENV_PATH" ]; then
+    source "$VENV_PATH/bin/activate"
+    echo "Activated: $VENV_PATH"
+else
+    echo "No virtual environment found in current or parent directories"
+    echo "Create one with: mkvenv"
+    exit 1
+fi
