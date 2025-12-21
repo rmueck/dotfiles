@@ -126,9 +126,9 @@ let g:ale_fixers = {
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \}
 " Navigate errors/warnings with Control + j/k
-nmap <silent> <C-k> <Plug>(ale_previous_wrap)
-nmap <silent> <C-j> <Plug>(ale_next_wrap)
-
+nmap <silent> <C-j> <Plug>(ale_previous_wrap)
+nmap <silent> <C-k> <Plug>(ale_next_wrap)
+"
 " Shortcut to toggle the fixing on/off quickly
 nnoremap <leader>at :let g:ale_fix_on_save = !g:ale_fix_on_save<CR>
 " }}}
