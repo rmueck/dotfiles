@@ -4,7 +4,7 @@ set -e
 
 # Configuration
 MASTER_REPO="/etc/dotfiles"
-DEFAULT_PACKAGES=("bash" "vim" "fzf" "tmux" "rclone")
+DEFAULT_PACKAGES=("bash" "vim" "fzf" "tmux" "rclone" "python")
 
 # Check if running with sudo
 if [ "$EUID" -ne 0 ]; then

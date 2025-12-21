@@ -114,9 +114,22 @@ let g:syntastic_python_checkers=['flake8']
 
 " ALE {{{ replace Syntastic
 " let g:ale_warn_about_trailing_whitespace = v:true
-let g:ale_open_list = 1
+let g:ale_open_list = 0
 let g:ale_keep_list_window_open = 0
 let g:ale_lint_on_enter = 1
+
+let g:ale_fixers = {
+\   'python': ['black', 'isort'],
+\   'json': ['jq'],
+\   'yaml': ['yq'],
+\   '*': ['remove_trailing_lines', 'trim_whitespace'],
+\}
+" Navigate errors/warnings with Control + j/k
+nmap <silent> <C-k> <Plug>(ale_previous_wrap)
+nmap <silent> <C-j> <Plug>(ale_next_wrap)
+
+" Shortcut to toggle the fixing on/off quickly
+nnoremap <leader>at :let g:ale_fix_on_save = !g:ale_fix_on_save<CR>
 " }}}
 
 " NERDTree settings {{{

@@ -125,14 +125,14 @@ export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND='fd --type d --ignore-file ${HOME}/.gitignore '
 
 
-export NMON=cmt
+export NMON=cmtd
 #
 # Run twolfson/sexy-bash-prompt
 #. ~/.bash_prompt
 . ~/.bash_prompt
 
 
-source ~/venv/bin/activate
+source ~/.venv/bin/activate
 
 # add local customizations
 if [ -f ~/.bashrc.local ]; then

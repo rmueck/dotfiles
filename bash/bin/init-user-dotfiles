@@ -1,0 +1,111 @@
+#!/bin/bash
+
+set -e
+
+# Configuration
+MASTER_REPO="/etc/dotfiles"
+DEFAULT_PACKAGES=("bash" "vim" "fzf" "tmux" "rclone" "python")
+
+# Check if running with sudo
+if [ "$EUID" -ne 0 ]; then
+    echo "Error: This script must be run with sudo"
+    echo "Usage: sudo $0 <username> [package1 package2 ...]"
+    exit 1
+fi
+
+# Parse arguments
+USERNAME=$1
+shift
+PACKAGES=("$@")
+
+# Use default packages if none specified
+if [ ${#PACKAGES[@]} -eq 0 ]; then
+    PACKAGES=("${DEFAULT_PACKAGES[@]}")
+fi
+
+# Validate user
+if [ -z "$USERNAME" ]; then
+    echo "Usage: sudo $0 <username> [package1 package2 ...]"
+    echo "Example: sudo $0 stowtest bash vim git"
+    exit 1
+fi
+
+USER_HOME=$(getent passwd "$USERNAME" | cut -d: -f6)
+USER_GROUP=$(id -gn "$USERNAME")
+
+if [ -z "$USER_HOME" ]; then
+    echo "Error: User $USERNAME not found"
+    exit 1
+fi
+
+USER_DOTFILES="$USER_HOME/.dotfiles"
+
+echo "Initializing dotfiles for $USERNAME..."
+echo "Home directory: $USER_HOME"
+echo "Packages to deploy: ${PACKAGES[*]}"
+
+# Remove existing dotfiles directory if present
+if [ -d "$USER_DOTFILES" ]; then
+    echo "Warning: $USER_DOTFILES already exists"
+    read -p "Remove and recreate? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$USER_DOTFILES"
+    else
+        echo "Aborting."
+        exit 1
+    fi
+fi
+
+# Simple copy of the entire structure (excluding .git)
+echo "Copying dotfiles from $MASTER_REPO..."
+mkdir -p "$USER_DOTFILES"
+rsync -a --exclude='.git' "$MASTER_REPO/" "$USER_DOTFILES/"
+
+# Remove any nested git repositories to avoid issues
+find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Change ownership
+chown -R "$USERNAME:$USER_GROUP" "$USER_DOTFILES"
+
+# Initialize git repository as the user
+echo "Initializing git repository..."
+cd "$USER_DOTFILES"
+
+# Configure git for this user (in case not configured)
+sudo -u "$USERNAME" git config --global init.defaultBranch main 2>/dev/null || true
+sudo -u "$USERNAME" git config --global user.name "${USERNAME^}" 2>/dev/null || true
+sudo -u "$USERNAME" git config --global user.email "$USERNAME@$(hostname -f 2>/dev/null || hostname)" 2>/dev/null || true
+
+# Initialize and commit
+sudo -u "$USERNAME" git init
+sudo -u "$USERNAME" git add .
+sudo -u "$USERNAME" git commit -m "Initial dotfiles setup"
+
+echo "✓ Git repository initialized"
+
+# Deploy packages with stow
+echo "Deploying packages..."
+for package in "${PACKAGES[@]}"; do
+    if [ ! -d "$USER_DOTFILES/$package" ]; then
+        echo "Warning: Package '$package' not found, skipping..."
+        continue
+    fi
+
+    echo "  - Deploying $package"
+    cd "$USER_DOTFILES"
+    sudo -u "$USERNAME" stow -t "$USER_HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
+done
+
+echo ""
+echo "✓ Dotfiles initialized successfully for $USERNAME!"
+echo ""
+echo "User $USERNAME can now:"
+echo "  • Make changes in ~/.dotfiles/"
+echo "  • Commit changes: cd ~/.dotfiles && git add . && git commit -m 'message'"
+echo "  • View history: cd ~/.dotfiles && git log"
+echo "  • Restow after changes: cd ~/.dotfiles && stow -R bash"
+echo "  •💡 Do not forget to decrypt the rclone config in ~./config/rclone!"
+echo "  •💡 Do not forget to make your venv (one time) with mkvenv"
+echo ""
+echo "This is now $USERNAME's independent dotfiles repository."
