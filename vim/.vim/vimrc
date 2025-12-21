@@ -33,6 +33,7 @@ call plug#end()
 
 " Basic {{{
 set nocompatible
+set hidden
 syntax on
 filetype plugin indent on
 let mapleader = " "
