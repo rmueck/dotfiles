@@ -2,7 +2,7 @@
 *.swp
 *.swo
 *.swn
-# *~
+*~
 .netrwhist
 
 # OS files
