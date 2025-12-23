@@ -151,6 +151,7 @@ nnoremap <F8> :lclose<CR>
 nnoremap <S-F7> :lnext<CR>
 nnoremap <S-F8> :lprev<CR>
 nmap <leader>w :w!<cr>
+noremap <C---> :TComment<CR>
 command! W w !sudo tee % > /dev/null
 "noremap <Up> <NOP>
 "noremap <Down> <NOP>
