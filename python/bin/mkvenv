@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Create venv in current project directory
+VENV_DIR="${1:-.venv}"
+
+if [ -d "$VENV_DIR" ]; then
+    echo "Virtual environment already exists at $VENV_DIR"
+    read -p "Recreate? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 0
+    fi
+    rm -rf "$VENV_DIR"
+fi
+
+echo "Creating virtual environment in $VENV_DIR..."
+python3 -m venv "$VENV_DIR"
+
+# Activate
+source "$VENV_DIR/bin/activate"
+
+# Upgrade pip
+pip install --upgrade pip
+
+# Install from requirements.txt if present
+if [ -f "requirements.txt" ]; then
+    echo "Installing from requirements.txt..."
+    pip install -r requirements.txt
+fi
+
+# Install from pyproject.toml if present
+if [ -f "pyproject.toml" ]; then
+    echo "Installing project..."
+    pip install -e .
+fi
+
+echo ""
+echo "✓ Virtual environment created and activated"
+echo "Deactivate with: deactivate"

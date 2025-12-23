@@ -1,0 +1,12 @@
+# Vim runtime files
+*.swp
+*.swo
+*.swn
+*~
+.netrwhist
+
+# OS files
+.DS_Store
+Thumbs.db
+rclone/.config/rclone/rclone.conf.cpt
+rclone/.config/rclone/rclone.conf
