@@ -97,6 +97,9 @@ for package in "${PACKAGES[@]}"; do
     sudo -u "$USERNAME" stow -t "$USER_HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
 done
 
+# Deploy standard .gitconfig
+cp "$USER_DOTFILES"/git/.gitconfig.global "$USER_HOME"/.gitconfig
+
 echo ""
 echo "✓ Dotfiles initialized successfully for $USERNAME!"
 echo ""
@@ -105,6 +108,8 @@ echo "  • Make changes in ~/.dotfiles/"
 echo "  • Commit changes: cd ~/.dotfiles && git add . && git commit -m 'message'"
 echo "  • View history: cd ~/.dotfiles && git log"
 echo "  • Restow after changes: cd ~/.dotfiles && stow -R bash"
-echo "  • Do not forget to decrypt the rclone config in ~./config/rclone!"
+echo "  •💡 Do not forget to decrypt the rclone config in ~./config/rclone! (ccenrypt needed"
+echo "  •💡 Do not forget to make your venv (one time) with mkvenv"
+echo "  •💡 Do not forget to cleanup your vim Plug (one time) with :PlugClean :PlugInstall"
 echo ""
 echo "This is now $USERNAME's independent dotfiles repository."
