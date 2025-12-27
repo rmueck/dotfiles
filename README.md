@@ -1,5 +1,13 @@
 # dotfiles
 
-Central repo for dotfiles (stow)
+Central repo for dotfiles.
 
-**ccrypt package is needed for rclone**
+This repo is made to be used in combination with *stow*.
+
+The following packages are needed as paer of the workflow:
+
+- git
+- rsync
+- stow
+- ccrypt
+
