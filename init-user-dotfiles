@@ -60,10 +60,12 @@ fi
 # Simple copy of the entire structure (excluding .git)
 echo "Copying dotfiles from $MASTER_REPO..."
 mkdir -p "$USER_DOTFILES"
-rsync -a --exclude='.git' "$MASTER_REPO/" "$USER_DOTFILES/"
+# rsync -a --exclude='.git' "$MASTER_REPO/" "$USER_DOTFILES/"
+rsync -a  "$MASTER_REPO/" "$USER_DOTFILES/"
 
 # Remove any nested git repositories to avoid issues
-find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+#find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+#find "$USER_DOTFILES" -mindepth 2 -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Change ownership
 chown -R "$USERNAME:$USER_GROUP" "$USER_DOTFILES"
