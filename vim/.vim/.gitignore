@@ -2,6 +2,7 @@
 undodir/
 backup/
 swap/
+plugged/
 .netrwhist
 *.swp
 *.swo

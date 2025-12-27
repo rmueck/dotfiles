@@ -95,7 +95,7 @@ colorscheme PaperColor
 " colorscheme simple-dark
 " colorscheme gruvbox
 " colorscheme lucius
-" let g:airline_theme='lucius'
+let g:airline_theme='alduin'
 "}}}
 
 " Syntastic {{{
@@ -120,9 +120,9 @@ let g:ale_keep_list_window_open = 0
 let g:ale_lint_on_enter = 1
 
 let g:ale_fixers = {
-\   'python': ['black', 'isort'],
+\   'python': ['black', 'isort', 'flake8'],
 \   'json': ['jq'],
-\   'yaml': ['yq'],
+\   'yaml': ['yamllint'],
 \   '*': ['remove_trailing_lines', 'trim_whitespace'],
 \}
 " Navigate errors/warnings with Control + j/k
