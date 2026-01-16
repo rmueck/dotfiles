@@ -1,7 +1,11 @@
 annotated-types
 argcomplete
+argon2
+argon2-cffi
+argon2-cffi-bindings
 black
 certifi
+cffi
 charset-normalizer
 click
 demjson3
@@ -17,6 +21,7 @@ mypy_extensions
 packaging
 pathspec
 platformdirs
+pycparser
 pydantic
 pydantic_core
 Pygments
