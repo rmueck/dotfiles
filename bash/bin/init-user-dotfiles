@@ -1,6 +1,8 @@
 #!/bin/bash
 
+
 set -e
+
 
 # Configuration
 MASTER_REPO="/etc/dotfiles"
@@ -12,6 +14,9 @@ if [ "$EUID" -ne 0 ]; then
     echo "Usage: sudo $0 <username> [package1 package2 ...]"
     exit 1
 fi
+
+# Check packages
+command -v ccrypt &>/dev/null && command -v stow &>/dev/null || { echo "Error: ccrypt and stow must be installed."; exit 1; }
 
 # Parse arguments
 USERNAME=$1
@@ -105,7 +110,8 @@ echo "  • Make changes in ~/.dotfiles/"
 echo "  • Commit changes: cd ~/.dotfiles && git add . && git commit -m 'message'"
 echo "  • View history: cd ~/.dotfiles && git log"
 echo "  • Restow after changes: cd ~/.dotfiles && stow -R bash"
-echo "  •💡 Do not forget to decrypt the rclone config rclone.conf.cpt and the ssh-key id_rclone.cpt - and stow -R rclone after!!"
+echo "  •⚠️  Do not forget to decrypt the rclone config rclone.conf.cpt and the ssh-key id_rclone.cpt - inwoke decrypt-rclone-conf.sh!"
 echo "  •💡 Do not forget to make your venv (one time) with mkvenv"
+echo "  •💡 Do not forget to cleanup your vim Plug (one time) with :PlugInstall"
 echo ""
 echo "This is now $USERNAME's independent dotfiles repository."
