@@ -89,6 +89,14 @@ sudo -u "$USERNAME" git commit -m "Initial dotfiles setup"
 
 echo "✓ Git repository initialized"
 
+# Save .bashrc and .profile
+echo "✓  saving .bashrc and .profile"
+! [ -L ${USER_HOME}/.bashrc ] && mv ${USER_HOME}/.bashrc ${USER_HOME}/.bashrc.save
+! [ -L ${USER_HOME}/.profile ] && mv ${USER_HOME}/.profile ${USER_HOME}/.profile.save
+# mv ${USER_HOME}/.bashrc ${USER_HOME}/${BASHSAVE}
+# mv ${USER_HOME}/.profile ${USER_HOME}/${PROFILESAVE}
+
+
 # Deploy packages with stow
 echo "Deploying packages..."
 for package in "${PACKAGES[@]}"; do
@@ -101,6 +109,8 @@ for package in "${PACKAGES[@]}"; do
     cd "$USER_DOTFILES"
     sudo -u "$USERNAME" stow -t "$USER_HOME" "$package" 2>&1 | grep -v "BUG in find_stowed_path" || true
 done
+
+
 
 echo ""
 echo "✓ Dotfiles initialized successfully for $USERNAME!"
@@ -116,6 +126,7 @@ echo "  •💡 Do not forget to cleanup your vim Plug (one time) with :PlugInst
 echo ""
 echo " •💡 Copy .gitconfig.global to ${USERNAME} .gitconfig"
 cp /home/${USERNAME}/.gitconfig.global /home/${USERNAME}/.gitconfig
+
 echo ""
 echo "This is now $USERNAME's independent dotfiles repository."
 
