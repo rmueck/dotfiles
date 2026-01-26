@@ -124,12 +124,12 @@ echo "  •⚠️  Do not forget to decrypt the rclone config rclone.conf.cpt an
 echo "  •💡 Do not forget to make your venv (one time) with mkvenv"
 echo "  •💡 Do not forget to cleanup your vim Plug (one time) with :PlugInstall"
 echo ""
-echo " •💡 Copy .gitconfig.global to ${USERNAME} .gitconfig"
-cp /home/${USERNAME}/.gitconfig.global /home/${USERNAME}/.gitconfig
+echo " •💡 Copy .gitconfig.global to ${USERNAME} .gitconfig and generate .gitconfig.local"
+cp /home/"${USERNAME}"/.gitconfig.global /home/"${USERNAME}"/.gitconfig
+# 1. Set the dynamic email
+git config --file /home/"${USERNAME}"/.gitconfig.local user.email "${USERNAME}@$(hostname -f)"
+git config --file /home/"${USERNAME}"/.gitconfig.local user.name "${USERNAME}"
 
 echo ""
 echo "This is now $USERNAME's independent dotfiles repository."
 
-# Copy .gitconfig.global to users .gitconfig
-# echo " •💡 Copy .gitconfig.global to ${USERNAME} .gitconfig"
-# cp /home/${USERNAME}/.gitconfig.global /home/${USERNAME}/.gitconfig
