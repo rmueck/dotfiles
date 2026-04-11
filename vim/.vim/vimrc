@@ -12,6 +12,7 @@ call plug#begin('~/.vim/plugged')
   " ------------------------------------------------------------
   Plug 'https://github.com/scrooloose/nerdtree',
   " Trying ALE
+  Plug 'dense-analysis/ale'"
   "Plug 'https://github.com/vim-syntastic/syntastic',
   Plug 'https://github.com/vim-airline/vim-airline',
   Plug 'https://github.com/vim-airline/vim-airline-themes',
