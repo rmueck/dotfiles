@@ -41,3 +41,4 @@ wheel
 xmltodict
 yamlfix
 yq
+eyeD3
