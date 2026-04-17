@@ -132,6 +132,18 @@ export NMON=cmtd
 #. ~/.bash_prompt
 . ~/.bash_prompt
 
+# Fix for eyeD3
+eyed3() {
+    local args=()
+    for arg in "$@"; do
+        if [[ "$arg" != -* ]] && [[ -e "$PWD/$arg" ]]; then
+            args+=("$PWD/$arg")
+        else
+            args+=("$arg")
+        fi
+    done
+    command eyed3 "${args[@]}"
+}
 
 source ~/.venv/bin/activate
 
